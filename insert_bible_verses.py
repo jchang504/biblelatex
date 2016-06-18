@@ -42,15 +42,34 @@ import re
 import requests
 import sys
 
+API_QUERY = 'http://www.esvapi.org/v2/rest/passageQuery?key=IP&passage=%s&output-format=plain-text&include-passage-references=true&include-first-verse-numbers=false&include-verse-numbers=true&include-footnotes=false&include-short-copyright=false&include-passage-horizontal-lines=false&include-heading-horizontal-lines=false&include-headings=false&include-subheadings=false&include-selahs=false&include-content-type=false&line-length=0'
+
 BIBLE_MACRO_REGEX = r'\\bible{([^}]+)}{([^}]*)}'
 OPEN_QUOTE_REGEX = r'"(\S)'
 CLOSE_QUOTE_REGEX = r'(\S)"'
-VERSE_NUMBER_REGEX = r'\[(\d*)\]'
-API_QUERY = 'http://www.esvapi.org/v2/rest/passageQuery?key=IP&passage=%s&output-format=plain-text&include-passage-references=true&include-first-verse-numbers=false&include-verse-numbers=true&include-footnotes=false&include-short-copyright=false&include-passage-horizontal-lines=false&include-heading-horizontal-lines=false&include-headings=false&include-subheadings=false&include-selahs=false&include-content-type=false&line-length=0'
+VERSE_NUMBER_REGEX = r'\[(\d+)\]'
+POETRY_SMALL_INDENT_REGEX = r'^' + r'  (' + VERSE_NUMBER_REGEX + r')?(\S+)'
+POETRY_BIG_INDENT_REGEX = r'^' + r'    (' + VERSE_NUMBER_REGEX + r')?(\S+)'
 
 # Given the raw plain text from the API, return the passage formatted for LaTeX
 def format_response(raw, text_wrapper):
     formatted = raw
+
+    # Add n indents before poetry line (e.g. Psalms), after verse number
+    def indent_after_verse_number(n):
+        def indent_n(match):
+            verse_number = match.group(1)
+            if verse_number is None:
+                verse_number = ''
+            first_word = match.group(3)
+            return verse_number + (n * '\\indent{}') + first_word
+        return indent_n
+
+    # Indent poetry lines
+    formatted = re.sub(POETRY_SMALL_INDENT_REGEX, indent_after_verse_number(1),
+            formatted, flags=re.MULTILINE)
+    formatted = re.sub(POETRY_BIG_INDENT_REGEX, indent_after_verse_number(2),
+            formatted, flags=re.MULTILINE)
 
     # Convert plain text quotes to LaTeX open and close quotes
     def latex_open_quote(match):
@@ -76,14 +95,17 @@ def format_response(raw, text_wrapper):
 # Given a re.MatchObject matching a Bible macro, return the passage specified,
 # formatted for LaTeX
 def get_formatted_bible_text(match):
-    response = requests.get(API_QUERY % match.group(1))
+    passage_param = match.group(1)
+    text_wrapper = match.group(2)
+
+    response = requests.get(API_QUERY % passage_param)
     if response.status_code != requests.codes.ok:
         sys.stderr.write('ERROR: Request to Bible API failed with status code: %s\n' % r.status_code)
         sys.exit(1)
     if response.text.startswith('ERROR'):
-        sys.stderr.write('ERROR: Invalid passage argument: %s\n' % match.group(1))
+        sys.stderr.write('ERROR: Invalid passage argument: %s\n' % passage_param)
         sys.exit(1)
-    return format_response(response.text, match.group(2))
+    return format_response(response.text, text_wrapper)
 
 filename = sys.argv[1]
 with open(filename) as f:
