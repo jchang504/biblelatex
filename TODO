@@ -1,9 +1,9 @@
 Bugs:
     P0:
-        - Squashes explicit linebreaks and indentation (e.g. Matthew 5:3-10,
-          Psalms) because LaTeX interprets as general whitespace
-        - Normal choices of \text_wrapper (e.g. \texttt, \textit) can't wrap
-          multiple paragraphs, gives error
+    P1:
+        - Add standard style of indentation for poetry (e.g. Psalms, Proverbs)
+        - Check if quotes within quotes work; fix if not. (E.g. "Then he said,
+          'This is a quote within a quote.'")
     P2:
         - \end{document} isn't an elegant way to kill compilation, as it gives
           an error when used within an environment (other than document)

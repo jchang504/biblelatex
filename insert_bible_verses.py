@@ -42,12 +42,11 @@ import re
 import requests
 import sys
 
-BIBLE_MACRO_REGEX = r'\\bible{([^}]+)}{([^}]+)}'
-CITATION_REGEX = r'(?:\d )?[\w\s]+ [0-9:-]+'
+BIBLE_MACRO_REGEX = r'\\bible{([^}]+)}{([^}]*)}'
 OPEN_QUOTE_REGEX = r'"(\S)'
 CLOSE_QUOTE_REGEX = r'(\S)"'
 VERSE_NUMBER_REGEX = r'\[(\d*)\]'
-API_QUERY = 'http://www.esvapi.org/v2/rest/passageQuery?key=IP&passage=%s&output-format=plain-text&include-passage-references=true&include-first-verse-numbers=false&include-verse-numbers=true&include-footnotes=false&include-short-copyright=false&include-passage-horizontal-lines=false&include-heading-horizontal-lines=false&include-headings=false&include-subheadings=false&include-selahs=false&include-content-type=false&line-length=79'
+API_QUERY = 'http://www.esvapi.org/v2/rest/passageQuery?key=IP&passage=%s&output-format=plain-text&include-passage-references=true&include-first-verse-numbers=false&include-verse-numbers=true&include-footnotes=false&include-short-copyright=false&include-passage-horizontal-lines=false&include-heading-horizontal-lines=false&include-headings=false&include-subheadings=false&include-selahs=false&include-content-type=false&line-length=0'
 
 # Given the raw plain text from the API, return the passage formatted for LaTeX
 def format_response(raw, text_wrapper):
@@ -66,14 +65,13 @@ def format_response(raw, text_wrapper):
         return '\\textnormal{\\textsuperscript{%s}}' % match.group(1)
     formatted = re.sub(VERSE_NUMBER_REGEX, superscript_verse_number, formatted)
 
-    # Move citation from beginning to end, wrap text, return
-    m = re.match(CITATION_REGEX, formatted)
-    if m:
-        formatted = re.sub(CITATION_REGEX, '', formatted)
-        return '%s{%s} -- %s' % (text_wrapper, formatted, m.group(0))
-    else:
-        sys.stderr.write('ERROR: Failed to find verse citation in API response: %s\n' % formatted)
-        sys.exit(1)
+    # Wrap paragraphs with text_wrapper
+    paragraphs = formatted.splitlines()
+    citation = paragraphs[0]
+    wrapped_paragraphs = ['%s{%s}' % (text_wrapper, p) for p in paragraphs[1:]]
+
+    # Add citation at end
+    return '%s -- %s' % ('\n\n'.join(wrapped_paragraphs), citation)
 
 # Given a re.MatchObject matching a Bible macro, return the passage specified,
 # formatted for LaTeX
