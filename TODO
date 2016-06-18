@@ -1,8 +1,6 @@
 Bugs:
     P0:
     P1:
-        - Check if quotes within quotes work; fix if not. (E.g. "Then he said,
-          'This is a quote within a quote.'")
     P2:
         - Perfect poetry indentation - verse numbers cause indentation to not
           line up perfectly. Something like tabs is what we want.

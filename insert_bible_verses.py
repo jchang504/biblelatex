@@ -45,8 +45,10 @@ import sys
 API_QUERY = 'http://www.esvapi.org/v2/rest/passageQuery?key=IP&passage=%s&output-format=plain-text&include-passage-references=true&include-first-verse-numbers=false&include-verse-numbers=true&include-footnotes=false&include-short-copyright=false&include-passage-horizontal-lines=false&include-heading-horizontal-lines=false&include-headings=false&include-subheadings=false&include-selahs=false&include-content-type=false&line-length=0'
 
 BIBLE_MACRO_REGEX = r'\\bible{([^}]+)}{([^}]*)}'
-OPEN_QUOTE_REGEX = r'"(\S)'
-CLOSE_QUOTE_REGEX = r'(\S)"'
+OPEN_SINGLE_QUOTE_REGEX = r'([^A-Za-z])' + "'" + '([^\s"])'
+CLOSE_SINGLE_QUOTE_REGEX = r"(\S)'"
+OPEN_DOUBLE_QUOTE_REGEX = r'"(\S)'
+CLOSE_DOUBLE_QUOTE_REGEX = r'(\S)"'
 VERSE_NUMBER_REGEX = r'\[(\d+)\]'
 POETRY_SMALL_INDENT_REGEX = r'^' + r'  (' + VERSE_NUMBER_REGEX + r')?(\S+)'
 POETRY_BIG_INDENT_REGEX = r'^' + r'    (' + VERSE_NUMBER_REGEX + r')?(\S+)'
@@ -72,12 +74,26 @@ def format_response(raw, text_wrapper):
             formatted, flags=re.MULTILINE)
 
     # Convert plain text quotes to LaTeX open and close quotes
-    def latex_open_quote(match):
-        return '``%s' % match.group(1)
-    def latex_close_quote(match):
+
+    # Single quotes
+    def latex_open_single_quote(match):
+        return '%s`%s' % (match.group(1), match.group(2))
+    def latex_close_single_quote(match):
+        return "%s'{}" % match.group(1)
+    formatted = re.sub(OPEN_SINGLE_QUOTE_REGEX, latex_open_single_quote,
+            formatted)
+    formatted = re.sub(CLOSE_SINGLE_QUOTE_REGEX, latex_close_single_quote,
+            formatted)
+
+    # Double quotes
+    def latex_open_double_quote(match):
+        return '``{}%s' % match.group(1)
+    def latex_close_double_quote(match):
         return "%s''" % match.group(1)
-    formatted = re.sub(OPEN_QUOTE_REGEX, latex_open_quote, formatted)
-    formatted = re.sub(CLOSE_QUOTE_REGEX, latex_close_quote, formatted)
+    formatted = re.sub(OPEN_DOUBLE_QUOTE_REGEX, latex_open_double_quote,
+            formatted)
+    formatted = re.sub(CLOSE_DOUBLE_QUOTE_REGEX, latex_close_double_quote,
+            formatted)
 
     # Convert verse numbers like [1] to LaTeX superscripts
     def superscript_verse_number(match):
@@ -90,7 +106,7 @@ def format_response(raw, text_wrapper):
     wrapped_paragraphs = ['%s{%s}' % (text_wrapper, p) for p in paragraphs[1:]]
 
     # Add citation at end
-    return '%s -- %s' % ('\n\n'.join(wrapped_paragraphs), citation)
+    return '%s -- %s (ESV)' % ('\n\n'.join(wrapped_paragraphs), citation)
 
 # Given a re.MatchObject matching a Bible macro, return the passage specified,
 # formatted for LaTeX
