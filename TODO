@@ -4,5 +4,5 @@ Bugs:
     P2:
         - Perfect poetry indentation - verse numbers cause indentation to not
           line up perfectly. Something like tabs is what we want.
-        - \end{document} isn't an elegant way to kill compilation, as it gives
-          an error when used within an environment (other than document)
+        - Quotes aren't closed if the quote continues beyond the referenced
+          verses. Unclear how this should behave.
