@@ -48,8 +48,8 @@ The default output format configuration before you run any `\setbible` is as
 follows.
 
 ```
-format_string: '%(passage)s -- %(citation)s (ESV)'
-\text_wrapper: '\textit'
+format_string: %(passage)s -- %(citation)s (ESV)
+\text_wrapper: \textit
 ```
 
 ## Running the preprocessor
